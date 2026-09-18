@@ -11,6 +11,10 @@
     [
       "Examples/bmp585-forcedModeCustomConfig.py",
       "github:SolderedElectronics/Soldered-BMP585-MicroPython-Library/Examples/bmp585-forcedModeCustomConfig.py"
+    ],
+    [
+      "Examples/bmp585-dataReadyInterrupt.py",
+      "github:SolderedElectronics/Soldered-BMP585-MicroPython-Library/Examples/bmp585-dataReadyInterrupt.py"
     ]
   ],
   "deps": [],

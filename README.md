@@ -22,7 +22,7 @@ while True:
     time.sleep(1)
 ```
 
-Have a look at the scripts in `Examples/` for basic readings and forced-mode single-shot readings with a custom configuration.
+Have a look at the scripts in `Examples/` for basic readings, forced-mode single-shot readings with a custom configuration, and using the sensor's physical interrupt pin.
 
 ### How to install
 
@@ -45,7 +45,7 @@ Or, if you're running a Windows OS:
 
 - **bmp585.py** - MicroPython driver class, I2C only
 - **package.json** - mip install manifest
-- **/Examples** - examples for basic readings and forced-mode custom configuration
+- **/Examples** - examples for basic readings, forced-mode custom configuration, and the physical interrupt pin
 
 ### Examples
 
@@ -53,6 +53,7 @@ Or, if you're running a Windows OS:
 | :------ | :----------- |
 | `bmp585-basicReadings.py` | Reads pressure and temperature in a loop in normal power mode, the mode most applications want |
 | `bmp585-forcedModeCustomConfig.py` | Configures oversampling/IIR filtering and takes single-shot readings in forced power mode, for low-power, infrequent-reading use cases |
+| `bmp585-dataReadyInterrupt.py` | Uses the sensor's physical interrupt pin to know when a new reading is ready, instead of polling the interrupt status register |
 
 ### Hardware design
 

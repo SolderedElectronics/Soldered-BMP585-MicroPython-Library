@@ -96,6 +96,18 @@ BMP5_IIR_FILTER_COEFF_31 = 0x05
 BMP5_IIR_FILTER_COEFF_63 = 0x06
 BMP5_IIR_FILTER_COEFF_127 = 0x07
 
+# Interrupt pin mode
+BMP5_PULSED = 0
+BMP5_LATCHED = 1
+
+# Interrupt pin polarity
+BMP5_ACTIVE_LOW = 0
+BMP5_ACTIVE_HIGH = 1
+
+# Interrupt pin drive
+BMP5_INTR_PUSH_PULL = 0
+BMP5_INTR_OPEN_DRAIN = 1
+
 # Interrupt assertion status flags, as returned by get_interrupt_status()
 BMP5_INT_ASSERTED_DRDY = 0x01
 BMP5_INT_ASSERTED_FIFO_FULL = 0x02
@@ -111,6 +123,8 @@ _BMP5_INT_NVM_ERR = 0x04
 BMP5_REG_CHIP_ID = 0x01
 BMP5_REG_REV_ID = 0x02
 BMP5_REG_CHIP_STATUS = 0x11
+BMP5_REG_INT_CONFIG = 0x14
+BMP5_REG_INT_SOURCE = 0x15
 BMP5_REG_TEMP_DATA_XLSB = 0x1D
 BMP5_REG_PRESS_DATA_XLSB = 0x20
 BMP5_REG_INT_STATUS = 0x27
@@ -149,6 +163,20 @@ _BMP5_IIR_FLUSH_FORCED_EN_MSK = 0x04
 _BMP5_IIR_FLUSH_FORCED_EN_POS = 2
 _BMP5_IIR_BYPASS_MSK = 0xC0
 _BMP5_FIFO_FRAME_SEL_MSK = 0x03
+_BMP5_INT_MODE_MSK = 0x01
+_BMP5_INT_POL_MSK = 0x02
+_BMP5_INT_POL_POS = 1
+_BMP5_INT_OD_MSK = 0x04
+_BMP5_INT_OD_POS = 2
+_BMP5_INT_EN_MSK = 0x08
+_BMP5_INT_EN_POS = 3
+_BMP5_INT_DRDY_EN_MSK = 0x01
+_BMP5_INT_FIFO_FULL_EN_MSK = 0x02
+_BMP5_INT_FIFO_FULL_EN_POS = 1
+_BMP5_INT_FIFO_THRES_EN_MSK = 0x04
+_BMP5_INT_FIFO_THRES_EN_POS = 2
+_BMP5_INT_OOR_PRESS_EN_MSK = 0x08
+_BMP5_INT_OOR_PRESS_EN_POS = 3
 
 # Delays required by the sensor, in microseconds
 _BMP5_DELAY_US_SOFT_RESET = 2000
@@ -647,8 +675,8 @@ class BMP585:
         """
         Get the data-ready / FIFO / OOR interrupt status.
 
-        Useful for polling since this breakout doesn't expose the sensor's
-        interrupt pin.
+        Useful whether you're polling it directly or checking it after the
+        sensor's physical interrupt pin fires.
 
         :return: Bitmask of BMP5_INT_ASSERTED_* flags, None on error
         """
@@ -660,6 +688,74 @@ class BMP585:
             self.intf_rslt = BMP5_E_COM_FAIL
             self.status = BMP5_E_COM_FAIL
             return None
+
+    def configure_interrupt(self, mode, pol, drive, enable):
+        """
+        Configure the behavior of the sensor's physical interrupt pin.
+
+        Does not select which condition asserts it, see set_interrupt_source().
+        Direct port of bmp5.c's bmp5_configure_interrupt(): disables all
+        interrupt sources and clears any pending status before applying the
+        new pin behavior, since a mode change must happen while disabled.
+
+        :param mode: BMP5_PULSED or BMP5_LATCHED
+        :param pol: BMP5_ACTIVE_LOW or BMP5_ACTIVE_HIGH
+        :param drive: BMP5_INTR_PUSH_PULL or BMP5_INTR_OPEN_DRAIN
+        :param enable: True to enable the interrupt pin, False to disable it
+        """
+        try:
+            reg_data = self._get_regs(BMP5_REG_INT_CONFIG, 1)[0]
+
+            # Turn off all interrupt sources, then clear any pending status
+            self._set_regs(BMP5_REG_INT_SOURCE, [0])
+            self._get_regs(BMP5_REG_INT_STATUS, 1)
+
+            reg_data = (reg_data & ~_BMP5_INT_MODE_MSK & 0xFF) | (mode & _BMP5_INT_MODE_MSK)
+            reg_data = (reg_data & ~_BMP5_INT_POL_MSK & 0xFF) | ((pol << _BMP5_INT_POL_POS) & _BMP5_INT_POL_MSK)
+            reg_data = (reg_data & ~_BMP5_INT_OD_MSK & 0xFF) | ((drive << _BMP5_INT_OD_POS) & _BMP5_INT_OD_MSK)
+            enable_bit = BMP5_ENABLE if enable else BMP5_DISABLE
+            reg_data = (reg_data & ~_BMP5_INT_EN_MSK & 0xFF) | ((enable_bit << _BMP5_INT_EN_POS) & _BMP5_INT_EN_MSK)
+
+            self._set_regs(BMP5_REG_INT_CONFIG, [reg_data])
+            self.status = BMP5_OK
+        except OSError:
+            self.intf_rslt = BMP5_E_COM_FAIL
+            self.status = BMP5_E_COM_FAIL
+
+    def set_interrupt_source(self, data_ready, fifo_full=False, fifo_threshold=False, pressure_oor=False):
+        """
+        Select which condition(s) assert the sensor's physical interrupt pin.
+
+        Call configure_interrupt() first.
+
+        :param data_ready: Assert on a new pressure/temperature reading
+        :param fifo_full: Assert when the FIFO buffer is full
+        :param fifo_threshold: Assert when the FIFO watermark is reached
+        :param pressure_oor: Assert when pressure goes out of range
+        """
+        try:
+            reg_data = self._get_regs(BMP5_REG_INT_SOURCE, 1)[0]
+            reg_data = (reg_data & ~_BMP5_INT_DRDY_EN_MSK & 0xFF) | (
+                (BMP5_ENABLE if data_ready else BMP5_DISABLE) & _BMP5_INT_DRDY_EN_MSK
+            )
+            reg_data = (reg_data & ~_BMP5_INT_FIFO_FULL_EN_MSK & 0xFF) | (
+                ((BMP5_ENABLE if fifo_full else BMP5_DISABLE) << _BMP5_INT_FIFO_FULL_EN_POS)
+                & _BMP5_INT_FIFO_FULL_EN_MSK
+            )
+            reg_data = (reg_data & ~_BMP5_INT_FIFO_THRES_EN_MSK & 0xFF) | (
+                ((BMP5_ENABLE if fifo_threshold else BMP5_DISABLE) << _BMP5_INT_FIFO_THRES_EN_POS)
+                & _BMP5_INT_FIFO_THRES_EN_MSK
+            )
+            reg_data = (reg_data & ~_BMP5_INT_OOR_PRESS_EN_MSK & 0xFF) | (
+                ((BMP5_ENABLE if pressure_oor else BMP5_DISABLE) << _BMP5_INT_OOR_PRESS_EN_POS)
+                & _BMP5_INT_OOR_PRESS_EN_MSK
+            )
+
+            self._set_regs(BMP5_REG_INT_SOURCE, [reg_data])
+            self.status = BMP5_OK
+        except OSError:
+            self.intf_rslt = BMP5_E_COM_FAIL
+            self.status = BMP5_E_COM_FAIL
 
     def get_sensor_data(self):
         """
