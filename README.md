@@ -1,25 +1,28 @@
-# Soldered NAZIV PROIZVODA MicroPython Library
+# Soldered BMP585 Barometric Pressure Sensor MicroPython Library
 
-| ![Product name](https://upload.wikimedia.org/wikipedia/commons/8/8f/Example_image.svg) |
-| :------------------------------------------------------------------------------------: |
-|                      [NAZIV PROIZVODA](https://www.solde.red/SKU)                      |
+| ![Soldered BMP585 Barometric Pressure Sensor breakout](TODO_PRODUCT_IMAGE_URL) |
+| :-----------------------------------------------------------------------------------------------: |
+|                          [Soldered BMP585 Barometric Pressure Sensor breakout](https://www.solde.red/333189)                     |
 
-OPIS PROIZVODA + LINK NA [Qwiic ecosystem](https://soldered.com/collections/qwiic-ecosystem).
+<!-- TODO: product not released yet (SKU 333189), swap the image URL above once the listing is live -->
 
-### Using the template
+Breakout board for the Bosch BMP585 barometric pressure sensor, measuring absolute pressure with ±6 Pa relative accuracy at output data rates up to 240 Hz, with configurable oversampling and an on-chip IIR filter. It supports normal, forced and continuous power modes for balancing measurement speed against power consumption. The board communicates over I2C only and is part of the [Qwiic ecosystem](https://soldered.com/collections/qwiic-ecosystem).
 
-Before publishing a new library make sure to update:
+### Quick start
 
-- `NAZIV PROIZVODA`, `OPIS PROIZVODA`, product image, SKU link, and the "Original source" line in this README
-- if there was no original soruce remove that section
-- update `package.json` with every filename and examples
-- add git tags and update git description
+```python
+from bmp585 import BMP585, BMP5_OK
+import time
 
-Also make sure to add examples.
+sensor = BMP585()  # Or BMP585(address=BMP5_I2C_ADDR_PRIM) if the SDO pin is pulled low
 
-**Remove this section of README after everything is done!**
+while True:
+    if sensor.get_sensor_data() == BMP5_OK:
+        print(sensor.data.pressure, sensor.data.temperature)
+    time.sleep(1)
+```
 
-For uploading to mim you need to login using the soldered account and submit the repo.
+Have a look at the scripts in `Examples/` for basic readings and forced-mode single-shot readings with a custom configuration.
 
 ### How to install
 
@@ -30,23 +33,30 @@ or
 After [**installing the mpremote package**](https://docs.micropython.org/en/latest/reference/mpremote.html), install the library on your board using the following command:
 
 ```sh
-  mpremote mip install github:SolderedElectronics/[REPO_NAME]
+  mpremote mip install github:SolderedElectronics/Soldered-BMP585-MicroPython-Library
 ```
 Or, if you're running a Windows OS:
 
 ```sh
-  python -m mpremote mip install github:SolderedElectronics/[REPO_NAME]
+  python -m mpremote mip install github:SolderedElectronics/Soldered-BMP585-MicroPython-Library
 ```
 
 ### Repository Contents
 
-- **[nazivproizvoda].py** - MicroPython driver class
+- **bmp585.py** - MicroPython driver class, I2C only
 - **package.json** - mip install manifest
-- **/Examples** - examples for using the library
+- **/Examples** - examples for basic readings and forced-mode custom configuration
+
+### Examples
+
+| Example | What it does |
+| :------ | :----------- |
+| `bmp585-basicReadings.py` | Reads pressure and temperature in a loop in normal power mode, the mode most applications want |
+| `bmp585-forcedModeCustomConfig.py` | Configures oversampling/IIR filtering and takes single-shot readings in forced power mode, for low-power, infrequent-reading use cases |
 
 ### Hardware design
 
-You can find hardware design for this board in _NAZIV PROIZVODA_ hardware repository.
+You can find hardware design for this board in _Soldered BMP585 Barometric Pressure Sensor breakout_ hardware repository.
 
 ### Documentation
 
@@ -64,7 +74,7 @@ At Soldered, we design and manufacture a wide selection of electronic products t
 
 ### Original source
 
-This library is possible thanks to original [[LIBRARY_NAME]]([LIBRARY_LINK]) library. Thank you, [AUTHOR].
+This library is a register-level port of the [BMP5_SensorAPI](https://github.com/boschsensortec/BMP5_SensorAPI) by Bosch Sensortec, cross-checked against the Soldered [Arduino](https://github.com/SolderedElectronics/Soldered-BMP585-Arduino-Library) and [ESP-IDF](https://github.com/SolderedElectronics/Soldered-BMP585-ESP-IDF-Component) BMP585 libraries. Thank you, Bosch Sensortec.
 
 ### Open-source license
 

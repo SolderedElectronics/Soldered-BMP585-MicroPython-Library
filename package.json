@@ -1,12 +1,16 @@
 {
   "urls": [
     [
-      "template.py",
-      "github:SolderedElectronics/[REPO_NAME]/template.py"
+      "bmp585.py",
+      "github:SolderedElectronics/Soldered-BMP585-MicroPython-Library/bmp585.py"
     ],
     [
-      "Examples/template-example.py",
-      "github:SolderedElectronics/[REPO_NAME]/Examples/template-example.py"
+      "Examples/bmp585-basicReadings.py",
+      "github:SolderedElectronics/Soldered-BMP585-MicroPython-Library/Examples/bmp585-basicReadings.py"
+    ],
+    [
+      "Examples/bmp585-forcedModeCustomConfig.py",
+      "github:SolderedElectronics/Soldered-BMP585-MicroPython-Library/Examples/bmp585-forcedModeCustomConfig.py"
     ]
   ],
   "deps": [],
